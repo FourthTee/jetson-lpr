@@ -1,6 +1,6 @@
 import gluoncv as gcv
 from gluoncv import model_zoo, data, utils
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 import mxnet as mx
 from openalpr import Alpr
 import time
@@ -11,10 +11,37 @@ from imutils.video import FPS
 import cv2
 import numpy as np
 import argparse
-
+cap_width=640
+cap_height=480
+def gstreamer_pipeline(
+    capture_width=cap_width,
+    capture_height=cap_height,
+    display_width=960,
+    display_height=616,
+    framerate=30/1,
+    flip_method=0,
+):
+    return (
+        "nvarguscamerasrc ! "
+        "video/x-raw(memory:NVMM), "
+        "width=(int)%d, height=(int)%d, "
+        "format=(string)NV12, framerate=(fraction)%d/1 ! "
+        "nvvidconv flip-method=%d ! "
+        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=(string)BGR ! appsink"
+        % (
+            capture_width,
+            capture_height,
+            framerate,
+            flip_method,
+            display_width,
+            display_height,
+        )
+    )
 def get_alpr():
     # load alpr model
-    alpr = Alpr("eu", "/etc/openalpr/openalpr.conf","/home/fourth/Desktop/repo/openalpr/runtime_data")
+    alpr = Alpr("eu", "/etc/openalpr/openalpr.conf","/home/nvidia/lpr/openalpr/runtime_data")
     if not alpr.is_loaded():
         print("Error loading OpenALPR")
     alpr.set_top_n(20)
@@ -30,6 +57,7 @@ def detect():
     
     # load model
     model_name = "ssd_512_mobilenet1.0_voc"
+    #model_name = "yolo3_darknet53_voc"
     net = model_zoo.get_model(model_name, pretrained=True, ctx=ctx)
     net.hybridize()
     if (args.image):
@@ -51,6 +79,8 @@ def detect():
                 confidence = []
                 #mx.nd.waitall()
                 
+                #print(time.time() - start)
+
                 class_IDs = class_IDs.asnumpy()
                 bounding_boxs = bounding_boxs.asnumpy()
                 scores = scores.asnumpy()
@@ -80,35 +110,39 @@ def detect():
                 print("Confidence: "+ str(confidence))
     elif (args.stream):
         print("Starting video stream...")
-        cap = cv2.VideoCapture(int(args.stream))
-        
+        #cap = cv2.VideoCapture('/dev/video1')
+        cap = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
+
         fps = FPS().start()
         while True:
         
             ret, frame = cap.read()
+            #print("frame read")
+            oframe = frame
+            #cv2.imshow('frame', frame)
             frame = mx.nd.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).astype('uint8')
-            
+            #print("frame collected")
             start = time.time()
 
             x, img = data.transforms.presets.ssd.transform_test(mx.nd.array(frame), short=512)
             x = x.as_in_context(ctx)
-
+            print("Loading predictions")
             class_IDs, scores, bounding_boxs = net(x)
             #print(scores)
             if visualize:
                 ax = utils.viz.plot_bbox(img, bounding_boxs[0], scores[0],
                                         class_IDs[0], class_names=net.classes)
                 plt.show()
-
+            #print("Prediction complete")
             plates = []
             confidence = []
-            mx.nd.waitall()
+            #mx.nd.waitall()
             class_IDs = class_IDs.asnumpy()
             bounding_boxs = bounding_boxs.asnumpy()
             scores = scores.asnumpy()
             img = gcv.utils.viz.cv_plot_bbox(frame, bounding_boxs[0], scores[0], class_IDs[0], class_names=net.classes)
             gcv.utils.viz.cv_plot_image(img)
-            
+            #print("Checking Plates")
             for i, obj in enumerate(class_IDs[0]):
                 if scores[0][i][0] > 0.6:
                     if obj[0] in [5, 6]:
@@ -135,7 +169,7 @@ def detect():
             if len(plates) > 0:
                 print(plates)
                 print(confidence)
-            #cv2.imshow('frame',frame)
+            #cv2.imshow('frame',oframe)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             fps.update()
@@ -146,6 +180,13 @@ def detect():
         cap.release()
         cv2.destroyAllWindows()
 
+def open_cam_usb(dev, width, height):
+    # We want to set width and height here, otherwise we could just do:
+    #     return cv2.VideoCapture(dev)
+    gst_str = ("v4l2src device=/dev/video{} ! "
+               "video/x-raw, width=(int){}, height=(int){}, format=(string)RGB ! "
+               "videoconvert ! appsink").format(dev, width, height)
+    return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
