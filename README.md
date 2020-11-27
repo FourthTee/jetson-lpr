@@ -32,3 +32,8 @@ To Run
 python3 main_tvm.py [--stream] [Video_Camera]
 ```
 - **stream**: video camera number
+
+
+## Benchmark
+
+The performance of each configuration on https://docs.google.com/spreadsheets/d/1oMSxabF4l3xrvqK6NWnBud4ajrDd7Hn4ok-dFK1BRNw/edit?usp=sharing
