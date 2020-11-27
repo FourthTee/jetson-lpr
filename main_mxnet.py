@@ -121,7 +121,7 @@ def detect():
         print("Starting video stream...")
         #cap = cv2.VideoCapture('/dev/video1')
         #cap = cv2.VideoCapture(gstreamer_pipeline(flip_method=1), cv2.CAP_GSTREAMER)
-        cap = cv2.VideoCapture(2)
+        cap = cv2.VideoCapture(0)
         fps = FPS().start()
         while True:
             start = time.time()
@@ -135,7 +135,7 @@ def detect():
 
             x, img = data.transforms.presets.ssd.transform_test(mx.nd.array(frame), short=512)
             x = x.as_in_context(ctx)
-            print("Loading predictions")
+            #print("Loading predictions")
             class_IDs, scores, bounding_boxs = net(x)
             #print(scores)
             if visualize:
@@ -149,36 +149,39 @@ def detect():
             class_IDs = class_IDs.asnumpy()
             bounding_boxs = bounding_boxs.asnumpy()
             scores = scores.asnumpy()
-            img = gcv.utils.viz.cv_plot_bbox(frame, bounding_boxs[0], scores[0], class_IDs[0], class_names=net.classes)
-            gcv.utils.viz.cv_plot_image(img)
+            #img = gcv.utils.viz.cv_plot_bbox(frame, bounding_boxs[0], scores[0], class_IDs[0], class_names=net.classes)
+            #gcv.utils.viz.cv_plot_image(img)
             #print("Checking Plates")
+            #img = oframe
             for i, obj in enumerate(class_IDs[0]):
                 if scores[0][i][0] > 0.6:
                     if obj[0] in [5, 6]:
-                    
+                        #print("Found")
                         x1 = bounding_boxs[0][i][0]
                         y1 = bounding_boxs[0][i][1]
                         x2 = bounding_boxs[0][i][2]
                         y2 = bounding_boxs[0][i][3]
-                        
+                        oframe = cv2.rectangle(oframe, (x1, y1), (x2, y2), (36,255,12), 2)
                         cropped = img[int(y1):int(y2), int(x1):int(x2)]
                         results = alpr.recognize_ndarray(cropped)
                         
                         if len(results['results']) == 0:
                             continue
                         else:
+                            plate = results['results'][0]['plate']
                             plates.append(results['results'][0]['plate'])
                             confidence.append(results['results'][0]['confidence'])
-                        #cv2.rectangle(frame, (x1, y1), (x2, y2), COLORS[i], 2)
+                            cv2.putText(oframe, plate, (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                        
                 else:
                     break
             
             end = time.time()
-            print("Time: "+str(end-start))
+            #print("Time: "+str(end-start))
             if len(plates) > 0:
                 print(plates)
                 print(confidence)
-            #cv2.imshow('frame',oframe)
+            cv2.imshow('frame',oframe)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             fps.update()

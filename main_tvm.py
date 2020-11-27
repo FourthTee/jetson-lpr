@@ -25,7 +25,7 @@ supported_model = [
     "ssd_300_vgg16_atrous_voc", "ssd_512_vgg16_atrous_coco",
 ]
 
-alpr = Alpr("eu", "/etc/openalpr/openalpr.conf","/openalpr/runtime_data")
+alpr = Alpr("eu", "/etc/openalpr/openalpr.conf","/home/fourth/Desktop/repo/openalpr/runtime_data")
 if not alpr.is_loaded():
     print("Error loading OpenALPR")
 alpr.set_top_n(20)
@@ -63,7 +63,7 @@ ctx = tvm.context(target, 0)
 if ctx.exist:
     graph, lib, params = build()
 print("Starting video stream...")
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     raise Exception("Could not open video device")
 # Set properties. Each returns === True on success (i.e. correct resolution)
@@ -79,6 +79,7 @@ while True:
         start = time.time()
         ret, frame = cap.read()
         #cv2.imshow("frame",frame)
+        oframe = frame
         #print(frame.shape)
         frame = mx.nd.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).astype('uint8')
         x, img = data.transforms.presets.ssd.transform_test(frame, short=480)
@@ -95,27 +96,37 @@ while True:
         bounding_boxs = bounding_boxs.asnumpy()
         scores = scores.asnumpy()
         end = time.time()
-        print("Runtime: "+str(end - start))
-        img = gcv.utils.viz.cv_plot_bbox(frame, bounding_boxs[0], scores[0], class_IDs[0], class_names=block.classes)
-        gcv.utils.viz.cv_plot_image(img)
+        #print("Runtime: "+str(end - start))
+        #img = gcv.utils.viz.cv_plot_bbox(frame, bounding_boxs[0], scores[0], class_IDs[0], class_names=block.classes)
+        #gcv.utils.viz.cv_plot_image(img)
+        #print(net.classes)
         for i, obj in enumerate(class_IDs[0]):
-            if obj[0] in [2, 3, 5, 7]:
                 if scores[0][i][0] > 0.6:
-                    x1 = bounding_boxs[0][i][0]
-                    y1 = bounding_boxs[0][i][1]
-                    x2 = bounding_boxs[0][i][2]
-                    y2 = bounding_boxs[0][i][3]
-                    cropped = img[int(y1):int(y2), int(x1):int(x2)]
+                    if obj[0] in [5, 6]:
+                        #print("Found")
+                        x1 = bounding_boxs[0][i][0]
+                        y1 = bounding_boxs[0][i][1]
+                        x2 = bounding_boxs[0][i][2]
+                        y2 = bounding_boxs[0][i][3]
+                        oframe = cv2.rectangle(oframe, (x1, y1), (x2, y2), (36,255,12), 2)
+                        cropped = img[int(y1):int(y2), int(x1):int(x2)]
+                        results = alpr.recognize_ndarray(cropped)
+                        
+                        if len(results['results']) == 0:
+                            continue
+                        else:
+                            plate = results['results'][0]['plate']
+                            plates.append(results['results'][0]['plate'])
+                            confidence.append(results['results'][0]['confidence'])
+                            cv2.putText(oframe, plate, (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                        
+                else:
+                    break
             
-                    results = alpr.recognize_ndarray(cropped)
-                    #results= {'results':[]}
-                    if len(results['results']) == 0:
-                        continue
-                    else:
-                        plates.append(results['results'][0]['plate'])
-                        confidence.append(results['results'][0]['confidence'])
-        #print("Plates: "+str(plates))
-        #print("Confidence: "+str(confidence))
+        if plates and confidence:
+            print("Plates: "+str(plates))
+            print("Confidence: "+str(confidence))
+        cv2.imshow('frame',oframe)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         fps.update()
