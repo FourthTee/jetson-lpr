@@ -63,7 +63,7 @@ def detect():
         #display = jetson.utils.videoOutput("display://0")
         fps = FPS().start()
         while True:
-            start = time.time()
+            #start = time.time()
             ret, frame = cap.read()
             img = frame.copy()
             #img = camera.Capture()
@@ -73,8 +73,8 @@ def detect():
             img = jetson.utils.cudaToNumpy(img, 1280, 720, 4)
             img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR).astype(np.uint8)
 	    
-            plates = []
-            confidence = []
+            #plates = []
+            #confidence = []
     
             for obj in detections:
                 classid = obj.ClassID
@@ -82,19 +82,22 @@ def detect():
                 if classid in [3,4,6,8]:
                     cropped = frame[y1:y2,x1:x2]
                     results = alpr.recognize_ndarray(cropped)
+                    frame = cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (36,255,12), 2)
                     if len(results['results']) == 0:
                         continue
                     else:
-                        plates.append(results['results'][0]['plate'])
-                        confidence.append(results['results'][0]['confidence'])
-                img = cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (36,255,12), 2)
+                        #plates.append(results['results'][0]['plate'])
+                        #confidence.append(results['results'][0]['confidence'])
+                        plate = results['results'][0]['plate']
+                        confidence = results['results'][0]['confidence']
+                        cv2.putText(frame, plate+': '+confidence, (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
-            end = time.time()
-            print("Time: "+str(end-start))
-            if len(plates) > 0:
-                print(plates)
-                print(confidence)
-            cv2.imshow('frame',img)
+            #end = time.time()
+            #print("Time: "+str(end-start))
+            #if len(plates) > 0:
+            #    print(plates)
+            #    print(confidence)
+            cv2.imshow('frame',frame)
             #display.Render(img)
             #display.SetStatus("Object Detection | Network {:.0f} FPS".format(net.GetNetworkFPS()))
             if cv2.waitKey(1) & 0xFF == ord('q'):
