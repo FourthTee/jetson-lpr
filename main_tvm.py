@@ -15,6 +15,8 @@ import numpy as np
 from imutils.video import VideoStream
 from imutils.video import FPS
 import gluoncv as gcv
+import argparse
+
 
 supported_model = [
     "ssd_512_resnet50_v1_voc",
@@ -25,17 +27,15 @@ supported_model = [
     "ssd_300_vgg16_atrous_voc", "ssd_512_vgg16_atrous_coco",
 ]
 
-alpr = Alpr("eu", "/etc/openalpr/openalpr.conf","/home/fourth/Desktop/repo/openalpr/runtime_data")
-if not alpr.is_loaded():
-    print("Error loading OpenALPR")
-alpr.set_top_n(20)
-alpr.set_default_region("md")
+def get_alpr(region):
+    # load alpr model
+    alpr = Alpr(region, "/etc/openalpr/openalpr.conf","/home/fourth/Desktop/repo/openalpr/runtime_data")
+    if not alpr.is_loaded():
+        print("Error loading OpenALPR")
+    alpr.set_top_n(20)
+    alpr.set_default_region("md")
+    return alpr
 
-model_name = supported_model[3]
-h = 480
-w = 640
-dshape = (1, 3, h, w)
-block = model_zoo.get_model(model_name, pretrained=True)
 def build():
     graph = open("model_opt.json").read()
     lib = tvm.runtime.load_module("./model_opt.so")
@@ -55,55 +55,39 @@ def evaluate(module, ctx, number, repeat):
     prof_res = np.array(ftimer().results) * 1000  # convert to millisecond
     print("Mean inference time (std dev): %.2f ms (%.2f ms)" % (np.mean(prof_res), np.std(prof_res)))
 
+def detect():
+    alpr = get_alpr("eu")
+    target = "cuda"
+    ctx = tvm.context(target, 0)
+    if ctx.exist:
+        graph, lib, params = build()
+    print("Starting video stream...")
+    cap = cv2.VideoCapture(int(args.stream))
+    if not cap.isOpened():
+        raise Exception("Could not open video device")
 
-target = "cuda"
-ctx = tvm.context(target, 0)
-#target = "llvm"
-#ctx = tvm.cpu()
-if ctx.exist:
-    graph, lib, params = build()
-print("Starting video stream...")
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    raise Exception("Could not open video device")
-# Set properties. Each returns === True on success (i.e. correct resolution)
-#cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-#out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (640,480))
-
-m = graph_runtime.create(graph, lib, ctx)
-m.load_params(params)
-fps = FPS().start()
-while True:
-    try:
-        start = time.time()
+    m = graph_runtime.create(graph, lib, ctx)
+    m.load_params(params)
+    fps = FPS().start()
+    while True:
+        
         ret, frame = cap.read()
-        #cv2.imshow("frame",frame)
+        
         oframe = frame
-        #print(frame.shape)
+        
         frame = mx.nd.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).astype('uint8')
         x, img = data.transforms.presets.ssd.transform_test(frame, short=480)
-        #x = x.as_in_context(ctx)
-        #print(x.shape)
-        #start = time.time()
+    
         class_IDs, scores, bounding_boxs = run(x, m, ctx)
-        #print(bounding_boxs)
-        #print(time.time() - start)
-        plates = []
-        confidence = []
-        #print("start enumeration")
+
         class_IDs = class_IDs.asnumpy()
         bounding_boxs = bounding_boxs.asnumpy()
         scores = scores.asnumpy()
-        end = time.time()
-        #print("Runtime: "+str(end - start))
-        #img = gcv.utils.viz.cv_plot_bbox(frame, bounding_boxs[0], scores[0], class_IDs[0], class_names=block.classes)
-        #gcv.utils.viz.cv_plot_image(img)
-        #print(net.classes)
+        
         for i, obj in enumerate(class_IDs[0]):
                 if scores[0][i][0] > 0.6:
                     if obj[0] in [5, 6]:
-                        #print("Found")
+                    
                         x1 = bounding_boxs[0][i][0]
                         y1 = bounding_boxs[0][i][1]
                         x2 = bounding_boxs[0][i][2]
@@ -116,34 +100,23 @@ while True:
                             continue
                         else:
                             plate = results['results'][0]['plate']
-                            plates.append(results['results'][0]['plate'])
-                            confidence.append(results['results'][0]['confidence'])
-                            cv2.putText(oframe, plate, (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                            confidence = results['results'][0]['confidence']
+                            cv2.putText(oframe, plate + ": " + str(confidence), (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                         
                 else:
                     break
-            
-        if plates and confidence:
-            print("Plates: "+str(plates))
-            print("Confidence: "+str(confidence))
+    
         cv2.imshow('frame',oframe)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        fps.update()
-    except KeyboardInterrupt:
-            break
-    
-fps.stop()
-print("Elapsed time: {:.2f}".format(fps.elapsed()))
-print("Approx. FPS: {:.2f}".format(fps.fps()))
-"""
-ax = utils.viz.plot_bbox(
-    img,
-    bounding_boxs.asnumpy()[0],
-    scores.asnumpy()[0],
-    class_IDs.asnumpy()[0],
-    class_names=block.classes,
-)
-#print(class_IDs.asnumpy()[0])
-plt.show()
-"""
+        fps.update() 
+    fps.stop()
+    print("Approx. FPS: {:.2f}".format(fps.fps()))
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--stream', help='Specify video stream')
+    args = parser.parse_args()
+    detect()
