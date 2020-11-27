@@ -87,8 +87,7 @@ def detect():
                     else:
                         plates.append(results['results'][0]['plate'])
                         confidence.append(results['results'][0]['confidence'])
-                color = (rng.randint(0,256), rng.randint(0,256), rng.randint(0,256))
-                cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                img = cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (36,255,12), 2)
 
             end = time.time()
             print("Time: "+str(end-start))
