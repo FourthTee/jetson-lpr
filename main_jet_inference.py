@@ -20,13 +20,13 @@ cap_height=480
 def gstreamer_pipeline(
     capture_width=cap_width,
     capture_height=cap_height,
-    display_width=960,
-    display_height=616,
-    framerate=30/1,
+    display_width=680,
+    display_height=480,
+    framerate=60/1,
     flip_method=0,
 ):
     return (
-        "nvarguscamerasrc ! "
+        "v4l2src device=/dev/video1"
         "video/x-raw(memory:NVMM), "
         "width=(int)%d, height=(int)%d, "
         "format=(string)NV12, framerate=(fraction)%d/1 ! "
@@ -43,6 +43,13 @@ def gstreamer_pipeline(
             display_height,
         )
     )
+def open_cam_usb(dev, width, height):
+    # We want to set width and height here, otherwise we could just do:
+    #     return cv2.VideoCapture(dev)
+    gst_str = ("v4l2src device=/dev/video{} ! "
+               "video/x-raw, width=(int){}, height=(int){}, format=(string)RGB ! "
+               "videoconvert ! appsink").format(dev, width, height)
+    return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
 def get_alpr():
     # load alpr model
     alpr = Alpr("eu", "/etc/openalpr/openalpr.conf","/home/nvidia/lpr/openalpr/runtime_data")
@@ -57,8 +64,9 @@ def detect():
     net = jetson.inference.detectNet("ssd-mobilenet-v1", threshold=0.5)
     if (args.stream):
         print("Starting video stream...")
-        #cap = cv2.VideoCapture('/dev/video1')
-        cap = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
+        cap = cv2.VideoCapture('/dev/video1')
+        #cap = cv2.VideoCapture(open_cam_usb(1, 640, 480), cv2.CAP_GSTREAMER)
+        #cap = open_cam_usb(1, 640, 480)
         #camera = jetson.utils.videoSource("csi://0")
         #display = jetson.utils.videoOutput("display://0")
         fps = FPS().start()
@@ -69,7 +77,9 @@ def detect():
             #img = camera.Capture()
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA).astype(np.float32)
             img = jetson.utils.cudaFromNumpy(img)
+            #s = time.time()
             detections = net.Detect(img, 1280, 720)
+            #print(time.time()-s)
             img = jetson.utils.cudaToNumpy(img, 1280, 720, 4)
             img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR).astype(np.uint8)
 	    
@@ -90,7 +100,7 @@ def detect():
                         #confidence.append(results['results'][0]['confidence'])
                         plate = results['results'][0]['plate']
                         confidence = results['results'][0]['confidence']
-                        cv2.putText(frame, plate+': '+confidence, (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                        cv2.putText(frame, plate+': '+str(confidence), (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
             #end = time.time()
             #print("Time: "+str(end-start))
