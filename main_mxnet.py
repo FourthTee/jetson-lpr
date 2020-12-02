@@ -10,64 +10,12 @@ from imutils.video import FPS
 import cv2
 import numpy as np
 import argparse
+from util import get_alpr, get_bbox, convertAsNumpy
 
-
-cap_width=640
-cap_height=480
-
-def gstreamer_pipeline(
-    capture_width=cap_width,
-    capture_height=cap_height,
-    display_width=960,
-    display_height=616,
-    framerate=30/1,
-    flip_method=0,
-):
-    return (
-        "nvarguscamerasrc ! "
-        "video/x-raw(memory:NVMM), "
-        "width=(int)%d, height=(int)%d, "
-        "format=(string)NV12, framerate=(fraction)%d/1 ! "
-        "nvvidconv flip-method=%d ! "
-        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
-        "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink"
-        % (
-            capture_width,
-            capture_height,
-            framerate,
-            flip_method,
-            display_width,
-            display_height,
-        )
-    )
-
-def open_cam_usb(dev, width, height):
-    # Set width and height for Gstreamer for non-jetson
-    gst_str = ("v4l2src device=/dev/video{} ! "
-               "video/x-raw, width=(int){}, height=(int){}, format=(string)RGB ! "
-               "videoconvert ! appsink").format(dev, width, height)
-    return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
-
-def get_alpr():
-    # load alpr model
-    alpr = Alpr("eu", "/etc/openalpr/openalpr.conf","/home/fourth/Desktop/repo/openalpr/runtime_data")
-    if not alpr.is_loaded():
-        print("Error loading OpenALPR")
-    alpr.set_top_n(20)
-    alpr.set_default_region("md")
-    return alpr
-
-def convertAsNumpy(classIDs, bboxes, scores):
-    classIDs = classIDs.asnumpy()
-    bboxes = bboxes.asnumpy()
-    scores = scores.asnumpy()
-    return classIDs, bboxes, scores
-
-def detect():
+def detect(language):
     ctx = mx.gpu()
     visualize = args.visualize
-    alpr = get_alpr()
+    alpr = get_alpr(language)
     
     # load model
     model_name = "ssd_512_mobilenet1.0_voc"
@@ -96,11 +44,7 @@ def detect():
                     if scores[0][i][0] > 0.6:
                         if obj[0] in [5, 6]:
                     
-                            x1 = bounding_boxs[0][i][0]
-                            y1 = bounding_boxs[0][i][1]
-                            x2 = bounding_boxs[0][i][2]
-                            y2 = bounding_boxs[0][i][3]
-                            
+                            x1, y1, x2, y2 = get_bbox(bounding_boxs, i)
                             cropped = img[int(y1):int(y2), int(x1):int(x2)]
                             results = alpr.recognize_ndarray(cropped)
                             
@@ -138,15 +82,10 @@ def detect():
             for i, obj in enumerate(class_IDs[0]):
                 if scores[0][i][0] > 0.6:
                     if obj[0] in [5, 6]:
-                        
-                        x1 = bounding_boxs[0][i][0]
-                        y1 = bounding_boxs[0][i][1]
-                        x2 = bounding_boxs[0][i][2]
-                        y2 = bounding_boxs[0][i][3]
+                        x1, y1, x2, y2 = get_bbox(bounding_boxs, i)
                         oframe = cv2.rectangle(oframe, (x1, y1), (x2, y2), (36,255,12), 2)
                         cropped = img[int(y1):int(y2), int(x1):int(x2)]
                         results = alpr.recognize_ndarray(cropped)
-                        
                         if len(results['results']) == 0:
                             continue
                         else:
@@ -154,7 +93,6 @@ def detect():
                             confidence = results['results'][0]['confidence']
             
                             cv2.putText(oframe, plate + ": " + str(confidence), (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-                        
                 else:
                     break
 
@@ -174,4 +112,4 @@ if __name__ == "__main__":
     parser.add_argument('--stream', help='Specify video stream')
     parser.add_argument('--visualize', default=False, help='Visualize bounding box image')
     args = parser.parse_args()
-    detect()
+    detect("eu")

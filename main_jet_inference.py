@@ -1,91 +1,34 @@
-import gluoncv as gcv
-from gluoncv import model_zoo, data, utils
-#from matplotlib import pyplot as plt
-import mxnet as mx
 from openalpr import Alpr
 import time
 import os
 import imutils
-from imutils.video import VideoStream
 from imutils.video import FPS
 import cv2
 import numpy as np
 import argparse
 import jetson.inference
 import jetson.utils
-import random as rng
-#os.system('sudo service nvargus-daemon restart')
-cap_width=640
-cap_height=480
-def gstreamer_pipeline(
-    capture_width=cap_width,
-    capture_height=cap_height,
-    display_width=680,
-    display_height=480,
-    framerate=60/1,
-    flip_method=0,
-):
-    return (
-        "v4l2src device=/dev/video1"
-        "video/x-raw(memory:NVMM), "
-        "width=(int)%d, height=(int)%d, "
-        "format=(string)NV12, framerate=(fraction)%d/1 ! "
-        "nvvidconv flip-method=%d ! "
-        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
-        "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink"
-        % (
-            capture_width,
-            capture_height,
-            framerate,
-            flip_method,
-            display_width,
-            display_height,
-        )
-    )
-def open_cam_usb(dev, width, height):
-    # We want to set width and height here, otherwise we could just do:
-    #     return cv2.VideoCapture(dev)
-    gst_str = ("v4l2src device=/dev/video{} ! "
-               "video/x-raw, width=(int){}, height=(int){}, format=(string)RGB ! "
-               "videoconvert ! appsink").format(dev, width, height)
-    return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
-def get_alpr():
-    # load alpr model
-    alpr = Alpr("eu", "/etc/openalpr/openalpr.conf","/home/nvidia/lpr/openalpr/runtime_data")
-    if not alpr.is_loaded():
-        print("Error loading OpenALPR")
-    alpr.set_top_n(20)
-    alpr.set_default_region("md")
-    return alpr
+from util import get_alpr
 
-def detect():
-    alpr = get_alpr()
+def detect(language):
+    alpr = get_alpr(language)
     net = jetson.inference.detectNet("ssd-mobilenet-v1", threshold=0.5)
     if (args.stream):
         print("Starting video stream...")
-        cap = cv2.VideoCapture('/dev/video1')
-        #cap = cv2.VideoCapture(open_cam_usb(1, 640, 480), cv2.CAP_GSTREAMER)
-        #cap = open_cam_usb(1, 640, 480)
-        #camera = jetson.utils.videoSource("csi://0")
-        #display = jetson.utils.videoOutput("display://0")
+        cap = cv2.VideoCapture('/dev/video'+args.stream)
+        if not cap.isOpened():
+            raise Exception("Could not open video device")
+
         fps = FPS().start()
         while True:
-            #start = time.time()
             ret, frame = cap.read()
             img = frame.copy()
-            #img = camera.Capture()
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA).astype(np.float32)
             img = jetson.utils.cudaFromNumpy(img)
-            #s = time.time()
             detections = net.Detect(img, 1280, 720)
-            #print(time.time()-s)
             img = jetson.utils.cudaToNumpy(img, 1280, 720, 4)
             img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR).astype(np.uint8)
-	    
-            #plates = []
-            #confidence = []
-    
+	
             for obj in detections:
                 classid = obj.ClassID
                 x1,y1,x2,y2 = [int(i) for i in obj.ROI]
@@ -96,20 +39,13 @@ def detect():
                     if len(results['results']) == 0:
                         continue
                     else:
-                        #plates.append(results['results'][0]['plate'])
-                        #confidence.append(results['results'][0]['confidence'])
+                        
                         plate = results['results'][0]['plate']
                         confidence = results['results'][0]['confidence']
                         cv2.putText(frame, plate+': '+str(confidence), (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
-            #end = time.time()
-            #print("Time: "+str(end-start))
-            #if len(plates) > 0:
-            #    print(plates)
-            #    print(confidence)
+            
             cv2.imshow('frame',frame)
-            #display.Render(img)
-            #display.SetStatus("Object Detection | Network {:.0f} FPS".format(net.GetNetworkFPS()))
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             fps.update()
@@ -126,4 +62,4 @@ if __name__ == "__main__":
     parser.add_argument('--stream', help='Specify video stream')
     parser.add_argument('--visualize', default=False, help='Visualize bounding box image')
     args = parser.parse_args()
-    detect()
+    detect("eu")
