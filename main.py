@@ -4,6 +4,8 @@ from lpr.tvm_inference import detect as tvm_detect
 from lpr.mxnet_inference import detect as mxnet_detect
 
 def parse_settings():
+    """ Return dictionary based on settings.yaml file """
+
     with open("settings.yaml", "r") as data:
         settings = yaml.safe_load(data)
     return settings

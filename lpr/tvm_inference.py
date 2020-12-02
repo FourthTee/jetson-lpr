@@ -11,6 +11,10 @@ import argparse
 from util import get_alpr, evaluate, get_bbox, convertAsNumpy, build, run
 
 def detect(target, language, dir, camera):
+    """
+    Take feed from camera and detect vehicle (using TVM opt model), 
+    draw bounding box, and read license plate (based on the language) 
+    """
     alpr = get_alpr(language)
     ctx = tvm.context(target, 0)
     if ctx.exist:

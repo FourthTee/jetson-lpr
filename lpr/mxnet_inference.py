@@ -12,6 +12,11 @@ import numpy as np
 from util import get_alpr, get_bbox, convertAsNumpy
 
 def detect(target, language, camera):
+    """
+    Take feed from camera and detect vehicle (using mxnet), 
+    draw bounding box, and read license plate (based on the language) 
+    """
+
     if target == 'llvm':
         ctx = mx.cpu()
     elif target == 'cuda':
