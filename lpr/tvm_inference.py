@@ -34,9 +34,7 @@ def detect(target, language, dir, camera):
     while True:
 
         ret, frame = cap.read()
-
         oframe = frame
-
         frame = mx.nd.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).astype("uint8")
         x, img = data.transforms.presets.ssd.transform_test(frame, short=480)
 
@@ -77,6 +75,9 @@ def detect(target, language, dir, camera):
             break
         fps.update()
     fps.stop()
+    print("Elapsed time: {:.2f}".format(fps.elapsed()))
     print("Approx. FPS: {:.2f}".format(fps.fps()))
+
+    # clean up capture window
     cap.release()
     cv2.destroyAllWindows()

@@ -47,7 +47,6 @@ def detect(language, camera):
                 if len(results["results"]) == 0:
                     continue
                 else:
-
                     plate = results["results"][0]["plate"]
                     confidence = results["results"][0]["confidence"]
                     cv2.putText(
@@ -67,6 +66,7 @@ def detect(language, camera):
     fps.stop()
     print("Elapsed time: {:.2f}".format(fps.elapsed()))
     print("Approx. FPS: {:.2f}".format(fps.fps()))
-    # do a bit of cleanup
+
+    # clean up capture window
     cap.release()
     cv2.destroyAllWindows()

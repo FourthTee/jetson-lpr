@@ -83,6 +83,9 @@ def detect(target, language, camera):
             break
         fps.update()
     fps.stop()
+    print("Elapsed time: {:.2f}".format(fps.elapsed()))
     print("Approx. FPS: {:.2f}".format(fps.fps()))
+
+    # clean up capture window
     cap.release()
     cv2.destroyAllWindows()
