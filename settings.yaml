@@ -1,0 +1,15 @@
+# choose from ['tvm', 'mxnet', 'jetson_inference']
+mode: 'mxnet'
+
+# path to directory with tvm opt model
+# only needed for when mode is 'tvm'
+model_file_dir: '1050_opt'
+
+# lanauge of lp ('eu' or 'us')
+language: 'eu'
+
+# video camera number
+video_camera: '0'
+
+# between 'llvm' and 'cuda'
+target: 'cuda'

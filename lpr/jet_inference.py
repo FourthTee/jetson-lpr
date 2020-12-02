@@ -10,12 +10,12 @@ import jetson.inference
 import jetson.utils
 from util import get_alpr
 
-def detect(language):
+def detect(language, camera):
     alpr = get_alpr(language)
     net = jetson.inference.detectNet("ssd-mobilenet-v1", threshold=0.5)
     if (args.stream):
         print("Starting video stream...")
-        cap = cv2.VideoCapture('/dev/video'+args.stream)
+        cap = cv2.VideoCapture('/dev/video'+camera)
         if not cap.isOpened():
             raise Exception("Could not open video device")
 
@@ -55,11 +55,3 @@ def detect(language):
         # do a bit of cleanup
         cap.release()
         cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--image', help='Path to image file.')
-    parser.add_argument('--stream', help='Specify video stream')
-    parser.add_argument('--visualize', default=False, help='Visualize bounding box image')
-    args = parser.parse_args()
-    detect("eu")

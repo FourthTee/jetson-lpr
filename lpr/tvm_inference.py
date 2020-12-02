@@ -10,16 +10,16 @@ from imutils.video import FPS
 import argparse
 from util import get_alpr, evaluate, get_bbox, convertAsNumpy, build, run
 
-def detect(target, language):
+def detect(target, language, dir, camera):
     alpr = get_alpr(language)
     ctx = tvm.context(target, 0)
     if ctx.exist:
-        graph, lib, params = build("1050_opt")
+        graph, lib, params = build(dir)
     else:
         raise Exception("Target does not exist")
     
     print("Starting video stream...")
-    cap = cv2.VideoCapture(int(args.stream))
+    cap = cv2.VideoCapture('/dev/video'+camera)
     if not cap.isOpened():
         raise Exception("Could not open video device")
 
@@ -65,9 +65,3 @@ def detect(target, language):
     print("Approx. FPS: {:.2f}".format(fps.fps()))
     cap.release()
     cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--stream', help='Specify video stream')
-    args = parser.parse_args()
-    detect("cuda", "eu")
