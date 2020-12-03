@@ -1,4 +1,5 @@
 import yaml
+import sys
 
 # from lpr.jet_inference import detect as jet_detect
 from lpr.tvm_inference import detect as tvm_detect
@@ -21,11 +22,14 @@ if __name__ == "__main__":
             settings["target"],
             settings["language"],
             settings["model_file_dir"],
-            settings["video_camera"],
+            str(settings["video_camera"]),
         )
     elif settings["mode"] == "mxnet":
-        mxnet_detect(settings["target"], settings["language"], settings["video_camera"])
+        mxnet_detect(
+            settings["target"], settings["language"], str(settings["video_camera"])
+        )
     elif settings["mode"] == "jet_inference":
-        jet_detect(settings["language"], settings["video_camera"])
+        jet_detect(settings["language"], str(settings["video_camera"]))
     else:
-        raise Exception("Not a valid mode")
+        print("Mode not valid")
+        sys.exit(1)

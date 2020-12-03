@@ -8,7 +8,7 @@ import numpy as np
 import argparse
 import jetson.inference
 import jetson.utils
-from util import get_alpr
+from util import get_alpr, gstreamer_pipeline
 
 
 def detect(language, camera):
@@ -21,9 +21,14 @@ def detect(language, camera):
     net = jetson.inference.detectNet("ssd-mobilenet-v1", threshold=0.5)
 
     print("Starting video stream...")
-    cap = cv2.VideoCapture("/dev/video" + camera)
+    if camera == "jetson_cam":
+        cap = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
+    else:
+        cap = cv2.VideoCapture("/dev/video" + camera)
+
     if not cap.isOpened():
-        raise Exception("Could not open video device")
+        print("Could not open video device (change video_camera)")
+        sys.exit(1)
 
     fps = FPS().start()
     while True:

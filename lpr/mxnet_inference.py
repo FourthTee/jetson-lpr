@@ -5,11 +5,11 @@ from openalpr import Alpr
 import time
 import os
 import imutils
-from imutils.video import VideoStream
 from imutils.video import FPS
 import cv2
 import numpy as np
-from util import get_alpr, get_bbox, convertAsNumpy
+from util import get_alpr, draw_plates, convertAsNumpy
+import sys
 
 
 def detect(target, language, camera):
@@ -23,19 +23,19 @@ def detect(target, language, camera):
     elif target == "cuda":
         ctx = mx.gpu()
     else:
-        raise Exception("Target should be cpu or cuda")
-    alpr = get_alpr(language)
+        print("Target does not exist")
+        sys.exit(1)
 
-    # load model
+    alpr = get_alpr(language)
     model_name = "ssd_512_mobilenet1.0_voc"
     net = model_zoo.get_model(model_name, pretrained=True, ctx=ctx)
     net.hybridize()
 
     print("Starting video stream...")
-    # cap = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
-    cap = cv2.VideoCapture(int(camera))
+    cap = cv2.VideoCapture("/dev/video" + camera)
     if not cap.isOpened():
-        raise Exception("Could not open video device")
+        print("Could not open video device (change video_camera)")
+        sys.exit(1)
 
     fps = FPS().start()
     while True:
@@ -52,30 +52,7 @@ def detect(target, language, camera):
             class_IDs, bounding_boxs, scores
         )
 
-        for i, obj in enumerate(class_IDs[0]):
-            if scores[0][i][0] > 0.6:
-                if obj[0] in [5, 6]:
-                    x1, y1, x2, y2 = get_bbox(bounding_boxs, i)
-                    oframe = cv2.rectangle(oframe, (x1, y1), (x2, y2), (36, 255, 12), 2)
-                    cropped = img[int(y1) : int(y2), int(x1) : int(x2)]
-                    results = alpr.recognize_ndarray(cropped)
-                    if len(results["results"]) == 0:
-                        continue
-                    else:
-                        plate = results["results"][0]["plate"]
-                        confidence = results["results"][0]["confidence"]
-
-                        cv2.putText(
-                            oframe,
-                            plate + ": " + str(confidence),
-                            (int(x1), int(y1) - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.9,
-                            (36, 255, 12),
-                            2,
-                        )
-            else:
-                break
+        oframe = draw_plates(class_IDs, scores, bounding_boxs, oframe, img, alpr)
 
         cv2.imshow("frame", oframe)
 
