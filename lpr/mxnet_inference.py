@@ -12,10 +12,19 @@ from util import get_alpr, draw_plates, convertAsNumpy
 import sys
 
 
-def detect(target, language, camera):
+def detect(target: str, language: str, camera: str):
     """
     Take feed from camera and detect vehicle (using mxnet),
     draw bounding box, and read license plate (based on the language)
+
+    Parameters
+    ----------
+    target: str
+        The device (CPU or GPU) that mxnet will inference on
+    language: str
+        Region of the license plate that OpenALPR will detect
+    camera: str
+        Specified camera input to use
     """
 
     if target == "llvm":

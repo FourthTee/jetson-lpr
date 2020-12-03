@@ -11,10 +11,17 @@ import jetson.utils
 from util import get_alpr, gstreamer_pipeline
 
 
-def detect(language, camera):
+def detect(language: str, camera: str):
     """
     Take feed from camera dn detect vehicle (using jetson-inference package),
     draw bounding box, and read license plate (based on the language)
+
+    Parameters
+    ----------
+    language: str
+        Region of the license plate that OpenALPR will detect
+    camera: str
+        Specified camera input to use
     """
 
     alpr = get_alpr(language)

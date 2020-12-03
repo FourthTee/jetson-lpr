@@ -121,7 +121,24 @@ def run(input, mod, ctx):
 
 
 def draw_plates(class_IDs, scores, bounding_boxs, oframe, img, alpr):
-    """ Search for vehicles, read license plate, draw box with license plate and returns the frame """
+    """
+    Search for vehicles, read license plate, draw box with license plate and returns the frame
+
+    Parameters
+    ----------
+    class_IDs:
+        Array of class_IDs of objects found by model
+    scores:
+        Array of inference scores of objects found by model
+    bounding_boxs:
+        Array of bounding boxes (x1, y1, x2, y2) of objects found by mdoel
+    oframe:
+        Original frame from captured from camera
+    img:
+        Preprocessed image
+    alpr:
+        Alpr object used for license plate reading
+    """
 
     for i, obj in enumerate(class_IDs[0]):
         if scores[0][i][0] > 0.6:

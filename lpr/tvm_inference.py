@@ -12,11 +12,23 @@ from util import get_alpr, evaluate, get_bbox, convertAsNumpy, build, run, draw_
 import sys
 
 
-def detect(target, language, dir, camera):
+def detect(target: str, language: str, dir: str, camera: str):
     """
     Take feed from camera and detect vehicle (using TVM opt model),
     draw bounding box, and read license plate (based on the language)
+
+    Parameters
+    ----------
+    target: str
+        The device (CPU or GPU) that TVM will inference on
+    language: str
+        Region of the license plate that OpenALPR will detect
+    dir: str
+        Directory that has shared library, graphs, and params
+    camera: str
+        Specified camera input to use
     """
+
     alpr = get_alpr(language)
     ctx = tvm.context(target, 0)
     if ctx.exist:
