@@ -2,38 +2,54 @@
 
 This project uses MobileNet SSD object detection and OpenLPR to recognize license plate. The mobilenet model was inferenced using Mxnet, Jetson Inference Package, and TVM.
 
-## Mxnet
-Make sure mxnet is installed on host machine
+## 1) Installation
 
-For GPU inference; install mxnet-cuda
 
-To Run
+## 2) Configure
+
+In the `settings.yaml` file there are parameters to set up
+
+- mode
+
+    There are three options for the mode
+    - `tvm`: run inference using TVM runtime
+    - `mxnet`: run inference using mxnet runtime
+    - `jet_inference`: run inference using jetson-inference package (only works when running on Nvidia Jetson devices)
+
+- model_dir_file
+
+    Only need to set when running in `tvm` mode
+
+    Set to `path` to directory containing `[model].so`, `[model].json`, and `[model].params` file
+
+- language
+
+    Set to the region in which the license plates are from
+
+    Currently options are `us`, `eu`, `au`, and `kr`
+
+- video_camera
+
+    Set to the `camera_number` that will capture the license plate
+
+    ```
+    /dev/video[camera_number]
+    ```
+
+- target
+
+    Set the target for running inference
+
+    - `llvm`: for running on CPU
+    - `cuda`: for running on GPU
+
+
+## 3) Run
+
 ```
-python3 main_mxnet.py [--images] [image_dir] [--stream] [video_camera] [--visualize] [yes/no]
+python3 main.py
 ```
 
-- **images**: the directory with test images
-- **stream**: video camera number
-- **visualize**: visualize image with bounding box (only apply when images is specified)
-
-## Jetson Inference Package
-Need to install build jetson inference package on Jetson (refer https://github.com/dusty-nv/jetson-inference)
-
-To Run 
-```
-python3 main_jet_inference.py
-```
-
-## TVM
-Make sure TVM is built on the host machine 
-
-To Run
-```
-python3 main_tvm.py [--stream] [Video_Camera]
-```
-- **stream**: video camera number
-
-
-## Benchmark
+## 4) Benchmark
 
 The performance of each configuration on https://docs.google.com/spreadsheets/d/1oMSxabF4l3xrvqK6NWnBud4ajrDd7Hn4ok-dFK1BRNw/edit?usp=sharing
