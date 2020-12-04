@@ -9,6 +9,7 @@ import argparse
 import jetson.inference
 import jetson.utils
 from util import get_alpr, gstreamer_pipeline
+from multithreading import VideoCaptureThreading
 
 
 def detect(language: str, camera: str):
@@ -31,11 +32,8 @@ def detect(language: str, camera: str):
     if camera == "jetson_cam":
         cap = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
     else:
-        cap = cv2.VideoCapture("/dev/video" + camera)
-
-    if not cap.isOpened():
-        print("Could not open video device (change video_camera)")
-        sys.exit(1)
+        cap = VideoCaptureThreading("/dev/video" + camera)
+        cap.start()
 
     fps = FPS().start()
     while True:
@@ -73,6 +71,7 @@ def detect(language: str, camera: str):
 
         cv2.imshow("frame", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
+            cap.stop()
             break
         fps.update()
     fps.stop()
@@ -80,5 +79,5 @@ def detect(language: str, camera: str):
     print("Approx. FPS: {:.2f}".format(fps.fps()))
 
     # clean up capture window
-    cap.release()
+    # cap.release()
     cv2.destroyAllWindows()
