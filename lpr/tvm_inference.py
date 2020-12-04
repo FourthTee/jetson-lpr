@@ -10,7 +10,7 @@ from imutils.video import FPS
 import argparse
 from util import get_alpr, evaluate, get_bbox, convertAsNumpy, build, run, draw_plates
 import sys
-from multithreading import VideoGet, VideoShow
+from multithreading import VideoGet, VideoShow, VideoCaptureThreading
 
 
 def detect(target: str, language: str, dir: str, camera: str):
@@ -39,21 +39,23 @@ def detect(target: str, language: str, dir: str, camera: str):
         sys.exit(1)
 
     print("Starting video stream...")
-    video_getter = VideoGet(camera).start()
+    # video_getter = VideoGet(camera).start()
     # video_shower = VideoShow(video_getter.frame).start()
+    cap = VideoCaptureThreading("/dev/video" + camera)
     """
     cap = cv2.VideoCapture("/dev/video" + camera)
     if not cap.isOpened():
         print("Could not open video device (change video_camera)")
         sys.exit(1)
     """
+    cap.start()
     module = graph_runtime.create(graph, lib, ctx)
     module.load_params(params)
     fps = FPS().start()
     while True:
 
-        # ret, frame = cap.read()
-        frame = video_getter.frame
+        _, frame = cap.read()
+        # frame = video_getter.frame
         oframe = frame
         frame = mx.nd.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).astype("uint8")
         x, img = data.transforms.presets.ssd.transform_test(frame, short=480)
@@ -68,15 +70,10 @@ def detect(target: str, language: str, dir: str, camera: str):
 
         cv2.imshow("frame", oframe)
         if cv2.waitKey(1) & 0xFF == ord("q"):
-            video_getter.stop()
+            cap.stop()
             break
-        """
-        if video_getter.stopped or video_shower.stopped:
-            video_shower.stop()
-            video_getter.stop()
-            break
-        video_shower.frame = oframe
-        """
+
+        # video_shower.frame = oframe
         fps.update()
     fps.stop()
     print("Elapsed time: {:.2f}".format(fps.elapsed()))
@@ -84,5 +81,5 @@ def detect(target: str, language: str, dir: str, camera: str):
 
     # clean up capture window
     # cap.release()
-    video_getter.stream.release()
+    # video_getter.stream.release()
     cv2.destroyAllWindows()
