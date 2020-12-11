@@ -1,4 +1,4 @@
-# License Plate Recognition using OpenALPR
+# License Plate Recognition on edge devices
 
 This project uses MobileNet SSD object detection and OpenLPR to recognize license plate. The mobilenet model was inferenced using Mxnet, Jetson Inference Package, and TVM.
 
