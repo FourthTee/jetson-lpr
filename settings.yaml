@@ -1,9 +1,9 @@
-# choose from ['tvm', 'mxnet', 'jetson_inference']
-mode: 'mxnet'
+# choose from ['tvm', 'mxnet', 'jet_inference']
+mode: 'tvm'
 
 # path to directory with tvm opt model
 # only needed for when mode is 'tvm'
-model_file_dir: '1050_opt'
+model_file_dir: 'models'
 
 # lanauge of lp ('eu' or 'us')
 language: 'eu'

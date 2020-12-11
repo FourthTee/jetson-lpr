@@ -51,7 +51,6 @@ def detect(target: str, language: str, dir: str, camera: str, path: str):
     module = graph_runtime.create(graph, lib, ctx)
     module.load_params(params)
     fps = FPS()
-    # runner = infRunner(module, ctx, alpr, cap.x, cap.img, cap.oframe).start()
     fps = fps.start()
     while True:
 
@@ -62,15 +61,6 @@ def detect(target: str, language: str, dir: str, camera: str, path: str):
         class_IDs, bounding_boxs, scores = convertAsNumpy(
             class_IDs, bounding_boxs, scores
         )
-        """
-        if not _ or runner.stopped:
-            runner.stop()
-            cap.stop()
-            break	
-        runner.x = cap.x
-        runner.oframe = cap.oframe
-        runner.img = cap.img
-        """
 
         oframe = draw_plates(class_IDs, scores, bounding_boxs, oframe, img, alpr)
         cv2.imshow("frame", oframe)
