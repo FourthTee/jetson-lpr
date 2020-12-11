@@ -79,6 +79,11 @@ In the `settings.yaml` file there are parameters to set up
 
 ```
 python3 main.py
+
+# To run through SSH onto Jetson
+ssh -X <user>@<IP Address>
+cd /path/to/project/folder
+python3 main.py
 ```
 
 ## 4) Benchmark
