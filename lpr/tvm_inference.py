@@ -10,7 +10,24 @@ from imutils.video import FPS
 import argparse
 from util import get_alpr, evaluate, get_bbox, convertAsNumpy, build, run, draw_plates
 import sys
-from multithreading import VideoGet, VideoShow, VideoCaptureThreading
+from multithreading import (
+    VideoGet,
+    VideoShow,
+    VideoCaptureThreading,
+    infRunner,
+    VidShow,
+)
+
+
+def open_cam_usb(dev, width, height):
+    # We want to set width and height here, otherwise we could just do:
+    #     return cv2.VideoCapture(dev)
+    gst_str = (
+        "v4l2src device=/dev/video{} ! "
+        "video/x-raw, width=(int){}, height=(int){} ! "
+        "videoconvert ! appsink"
+    ).format(dev, width, height)
+    return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
 
 
 def detect(target: str, language: str, dir: str, camera: str):
@@ -39,47 +56,40 @@ def detect(target: str, language: str, dir: str, camera: str):
         sys.exit(1)
 
     print("Starting video stream...")
-    # video_getter = VideoGet(camera).start()
-    # video_shower = VideoShow(video_getter.frame).start()
+
     cap = VideoCaptureThreading("/dev/video" + camera)
-    """
-    cap = cv2.VideoCapture("/dev/video" + camera)
-    if not cap.isOpened():
-        print("Could not open video device (change video_camera)")
-        sys.exit(1)
-    """
     cap.start()
     module = graph_runtime.create(graph, lib, ctx)
     module.load_params(params)
-    fps = FPS().start()
+    fps = FPS()
+    # runner = infRunner(module, ctx, alpr, cap.x, cap.img, cap.oframe).start()
+    fps = fps.start()
     while True:
-
-        _, frame = cap.read()
-        # frame = video_getter.frame
-        oframe = frame
-        frame = mx.nd.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).astype("uint8")
-        x, img = data.transforms.presets.ssd.transform_test(frame, short=480)
+        s = time.time()
+        _, frame, oframe, x, img = cap.read()
 
         class_IDs, scores, bounding_boxs = run(x, module, ctx)
 
         class_IDs, bounding_boxs, scores = convertAsNumpy(
             class_IDs, bounding_boxs, scores
         )
+        """
+        if not _ or runner.stopped:
+            runner.stop()
+            cap.stop()
+            break	
+        runner.x = cap.x
+        runner.oframe = cap.oframe
+        runner.img = cap.img
+        """
 
         oframe = draw_plates(class_IDs, scores, bounding_boxs, oframe, img, alpr)
-
         cv2.imshow("frame", oframe)
+
         if cv2.waitKey(1) & 0xFF == ord("q"):
             cap.stop()
             break
 
-        # video_shower.frame = oframe
         fps.update()
     fps.stop()
-    print("Elapsed time: {:.2f}".format(fps.elapsed()))
-    print("Approx. FPS: {:.2f}".format(fps.fps()))
-
-    # clean up capture window
-    # cap.release()
-    # video_getter.stream.release()
     cv2.destroyAllWindows()
