@@ -46,13 +46,13 @@ def open_cam_usb(dev, width, height):
     return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
 
 
-def get_alpr(region):
+def get_alpr(region, path):
     """Return Alpr object with the specified region of license plate"""
 
     alpr = Alpr(
         region,
         "/etc/openalpr/openalpr.conf",
-        "/home/fourth/Desktop/repo/openalpr/runtime_data",
+        path + "/runtime_data",
     )
     if not alpr.is_loaded():
         print("Error loading OpenALPR")

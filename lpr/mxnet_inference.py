@@ -12,7 +12,7 @@ from util import get_alpr, draw_plates, convertAsNumpy
 import sys
 
 
-def detect(target: str, language: str, camera: str):
+def detect(target: str, language: str, camera: str, path: str):
     """
     Take feed from camera and detect vehicle (using mxnet),
     draw bounding box, and read license plate (based on the language)
@@ -25,6 +25,8 @@ def detect(target: str, language: str, camera: str):
         Region of the license plate that OpenALPR will detect
     camera: str
         Specified camera input to use
+    path: str
+        Specified path to OpenALPR folder
     """
 
     if target == "llvm":
@@ -35,7 +37,7 @@ def detect(target: str, language: str, camera: str):
         print("Target does not exist")
         sys.exit(1)
 
-    alpr = get_alpr(language)
+    alpr = get_alpr(language, path)
     model_name = "ssd_512_mobilenet1.0_voc"
     net = model_zoo.get_model(model_name, pretrained=True, ctx=ctx)
     net.hybridize()

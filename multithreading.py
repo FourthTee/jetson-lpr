@@ -9,6 +9,8 @@ from imutils.video import FPS
 
 
 class infRunner:
+    """ Class used to perform inference on a different thread """
+
     def __init__(self, module, ctx, alpr, x=None, img=None, oframe=None):
         self.x = x
         self.img = img
@@ -21,15 +23,12 @@ class infRunner:
         self.class_IDs, self.scores, self.bounding_boxs = convertAsNumpy(
             class_IDs, bounding_boxs, scores
         )
-        # self.dframe = draw_plates(self.class_IDs, self.scores, self.bounding_boxs, self.oframe, self.img, self.alpr)
 
     def start(self):
         Thread(target=self.inf, args=()).start()
         return self
 
     def inf(self):
-        # print("check")
-        # fps = FPS().start()
         while not self.stopped:
 
             class_IDs, scores, bounding_boxs = run(self.x, self.module, self.ctx)
@@ -41,14 +40,11 @@ class infRunner:
             oframe = draw_plates(
                 class_IDs, scores, bounding_boxs, self.oframe, self.img, self.alpr
             )
-            # self.dframe = oframe
+
             cv2.imshow("frame", oframe)
-            # fps.update()
+
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 self.stopped = True
-                # fps.stop()
-        # print("Elapsed time: {:.2f}".format(fps.elapsed()))
-        # print("Approx. FPS: {:.2f}".format(fps.fps()))
 
     def get(self):
         return self.class_IDs, self.bounding_boxs, self.scores
@@ -58,6 +54,8 @@ class infRunner:
 
 
 class VideoCaptureThreading:
+    """ Class use to perform videocapture in parallel on a different thread """
+
     def __init__(self, src=0, width=640, height=480):
         self.src = src
         self.cap = cv2.VideoCapture(self.src)
@@ -117,6 +115,8 @@ class VideoCaptureThreading:
 
 
 class VidShow:
+    """ Class used to display frames in parallel on a different thread """
+
     def __init__(self, frame=None):
         self.frame = frame
         self.stopped = False

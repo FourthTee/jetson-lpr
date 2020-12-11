@@ -23,13 +23,19 @@ if __name__ == "__main__":
             settings["language"],
             settings["model_file_dir"],
             str(settings["video_camera"]),
+            settings["OpenALPR"],
         )
     elif settings["mode"] == "mxnet":
         mxnet_detect(
-            settings["target"], settings["language"], str(settings["video_camera"])
+            settings["target"],
+            settings["language"],
+            str(settings["video_camera"]),
+            settings["OpenALPR"],
         )
     elif settings["mode"] == "jet_inference":
-        jet_detect(settings["language"], str(settings["video_camera"]))
+        jet_detect(
+            settings["language"], str(settings["video_camera"]), settings["OpenALPR"]
+        )
     else:
         print("Mode not valid")
         sys.exit(1)

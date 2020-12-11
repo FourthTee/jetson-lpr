@@ -11,26 +11,13 @@ import argparse
 from util import get_alpr, evaluate, get_bbox, convertAsNumpy, build, run, draw_plates
 import sys
 from multithreading import (
-    VideoGet,
-    VideoShow,
     VideoCaptureThreading,
     infRunner,
     VidShow,
 )
 
 
-def open_cam_usb(dev, width, height):
-    # We want to set width and height here, otherwise we could just do:
-    #     return cv2.VideoCapture(dev)
-    gst_str = (
-        "v4l2src device=/dev/video{} ! "
-        "video/x-raw, width=(int){}, height=(int){} ! "
-        "videoconvert ! appsink"
-    ).format(dev, width, height)
-    return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
-
-
-def detect(target: str, language: str, dir: str, camera: str):
+def detect(target: str, language: str, dir: str, camera: str, path: str):
     """
     Take feed from camera and detect vehicle (using TVM opt model),
     draw bounding box, and read license plate (based on the language)
@@ -45,9 +32,11 @@ def detect(target: str, language: str, dir: str, camera: str):
         Directory that has shared library, graphs, and params
     camera: str
         Specified camera input to use
+    path: str
+        Path to OpenALPR folder
     """
 
-    alpr = get_alpr(language)
+    alpr = get_alpr(language, path)
     ctx = tvm.context(target, 0)
     if ctx.exist:
         graph, lib, params = build(dir)
@@ -65,7 +54,7 @@ def detect(target: str, language: str, dir: str, camera: str):
     # runner = infRunner(module, ctx, alpr, cap.x, cap.img, cap.oframe).start()
     fps = fps.start()
     while True:
-        s = time.time()
+
         _, frame, oframe, x, img = cap.read()
 
         class_IDs, scores, bounding_boxs = run(x, module, ctx)
@@ -92,4 +81,5 @@ def detect(target: str, language: str, dir: str, camera: str):
 
         fps.update()
     fps.stop()
+    print("Approx. FPS: {:.2f}".format(fps.fps()))
     cv2.destroyAllWindows()

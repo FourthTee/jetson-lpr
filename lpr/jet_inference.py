@@ -12,7 +12,7 @@ from util import get_alpr, gstreamer_pipeline
 from multithreading import VideoCaptureThreading
 
 
-def detect(language: str, camera: str):
+def detect(language: str, camera: str, path: str):
     """
     Take feed from camera dn detect vehicle (using jetson-inference package),
     draw bounding box, and read license plate (based on the language)
@@ -23,9 +23,11 @@ def detect(language: str, camera: str):
         Region of the license plate that OpenALPR will detect
     camera: str
         Specified camera input to use
+    path: str
+        Specified path to OpenALPR folder
     """
 
-    alpr = get_alpr(language)
+    alpr = get_alpr(language, path)
     net = jetson.inference.detectNet("ssd-mobilenet-v1", threshold=0.5)
 
     print("Starting video stream...")
@@ -37,7 +39,7 @@ def detect(language: str, camera: str):
 
     fps = FPS().start()
     while True:
-        ret, frame = cap.read()
+        _, frame, oframe, x, imgz = cap.read()
         img = frame.copy()
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA).astype(np.float32)
         img = jetson.utils.cudaFromNumpy(img)

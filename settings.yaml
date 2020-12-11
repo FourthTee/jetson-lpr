@@ -13,3 +13,6 @@ video_camera: '0'
 
 # between 'llvm' and 'cuda'
 target: 'cuda'
+
+# OpenALPR repo
+OpenALPR: '/home/fourth/Desktop/repo/openalpr'
