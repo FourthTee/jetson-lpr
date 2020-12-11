@@ -4,8 +4,6 @@ import cv2
 import mxnet as mx
 from gluoncv import data, utils
 from util import get_alpr, evaluate, get_bbox, convertAsNumpy, build, run, draw_plates
-from queue import *
-from imutils.video import FPS
 
 
 class infRunner:

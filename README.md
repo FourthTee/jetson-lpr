@@ -4,6 +4,34 @@ This project uses MobileNet SSD object detection and OpenLPR to recognize licens
 
 ## 1) Installation
 
+- Build OpenALPR
+
+    Follow the guidelines on https://github.com/openalpr/openalpr/wiki/Compilation-instructions-(Ubuntu-Linux) under the `The Easy Way (Ubuntu 14.04+)` section
+
+    To install the python API
+    ```
+    #Inside the openalpr cloned repo
+
+    cd src/bindings/python
+    python3 setup.py
+    ```
+
+- Build TVM Runtime
+
+    Follow the guidelines on https://tvm.apache.org/docs/deploy/index.html to build runtime on device
+
+- Mxnet Python API
+
+    ```
+    pip3 install mxnet==1.7.0
+    
+    # Depending on cuda version install mxnet-cu[version]
+    pip3 install mxnet-cu101 
+    ```
+
+- Jetson Inference Package (optional)
+    
+    Follow the guidelines on https://github.com/dusty-nv/jetson-inference/blob/master/docs/building-repo-2.md to install package
 
 ## 2) Configure
 
@@ -43,6 +71,9 @@ In the `settings.yaml` file there are parameters to set up
     - `llvm`: for running on CPU
     - `cuda`: for running on GPU
 
+- OpenALPR
+
+    Set path to OpenALPR repository (e.g /home/nvidia/lpr/openalpr)
 
 ## 3) Run
 
