@@ -5,8 +5,8 @@ mode: 'tvm'
 # only needed for when mode is 'tvm'
 model_file_dir: 'models'
 
-# lanauge of lp ('eu' or 'us')
-language: 'eu'
+# region of lp ('eu' or 'us')
+region: 'eu'
 
 # video camera number
 video_camera: '0'
