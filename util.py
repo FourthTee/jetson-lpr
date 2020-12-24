@@ -56,6 +56,7 @@ def get_alpr(region, path):
     )
     if not alpr.is_loaded():
         print("Error loading OpenALPR")
+        raise Exception("Invalid OpenALPR config")
     alpr.set_top_n(20)
     alpr.set_default_region("md")
     return alpr
