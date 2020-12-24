@@ -1,7 +1,7 @@
-from util import get_alpr, get_bbox, converAsNumpy
+from util import get_alpr, get_bbox, convertAsNumpy
 import cv2
 from mxnet import nd
-
+import numpy as np
 # Test functions in the util.py file
 
 
