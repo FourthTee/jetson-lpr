@@ -1,0 +1,7 @@
+gluoncv
+scikit-build
+mxnet
+torch
+mxnet-cu102
+imutils
+opencv-python==4.2.0.34
