@@ -4,6 +4,8 @@ test:
   stage: test
   image: registry.gitlab.com/sertiscorp/mle/edge/jetsonlpr
   script:
+    - pip3 install -r requirements.txt
     - python3 unit_test.py
+    - python3 int_test.py
 
 
