@@ -1,4 +1,4 @@
-from util import *
+from util import get_alpr, get_bbox, converAsNumpy
 import cv2
 from mxnet import nd
 
@@ -10,7 +10,7 @@ def open_alpr_fetch_test():
     error = False
     # Good Config
     try:
-        a = get_alpr("eu", "/home/fourth/Desktop/repo/openalpr")
+        a = get_alpr("eu", "/srv/openalpr")
     except Exception as exc:
         error = True
         print("Cannot create ALPR object")

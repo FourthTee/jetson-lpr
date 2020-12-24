@@ -1,4 +1,4 @@
-from util import *
+from util import convertAsNumpy
 import mxnet as mx
 from gluoncv import model_zoo, data, utils
 import cv2
