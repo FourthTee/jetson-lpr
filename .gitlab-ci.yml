@@ -1,0 +1,9 @@
+stages:
+    - test
+test:
+  stage: test
+  image: registry.gitlab.com/sertiscorp/mle/edge/jetsonlpr
+  script:
+    - python3 unit_test.py
+
+
