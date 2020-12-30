@@ -2,13 +2,16 @@ from util import get_alpr, get_bbox, convertAsNumpy
 import cv2
 from mxnet import nd
 import numpy as np
+
 # Test functions in the util.py file
 
 
 def open_alpr_fetch_test():
+    """
+    Check if get_alpr function is able to return alpr object and throw approperiate errors
+    """
 
     error = False
-    # Good Config
     try:
         a = get_alpr("eu", "/srv/openalpr")
     except Exception as exc:
@@ -25,6 +28,9 @@ def open_alpr_fetch_test():
 
 
 def get_bbox_test():
+    """
+    Check that get_bbox function is able to correcly return the approperiate coordinates
+    """
 
     bbox = [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]]
 
@@ -37,6 +43,9 @@ def get_bbox_test():
 
 
 def numpy_convert_test():
+    """
+    Check that convertAsNumpy is able to convert nd.array to np.array
+    """
 
     a = nd.array([1, 2, 3])
     b = nd.array([1, 2, 3])

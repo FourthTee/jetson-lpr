@@ -1,10 +1,15 @@
-from util import convertAsNumpy
+from util import convertAsNumpy, get_alpr, draw_plates
 import mxnet as mx
 from gluoncv import model_zoo, data, utils
 import cv2
 
+
 def mxnet_inf_test(frame):
-    
+    """
+    Test getting alpr object, fetching input image, transorming imgae, making inference using mxnet, and converting result to numpy
+    """
+
+    alpr = get_alpr("eu", "/srv/openalpr")
     ctx = mx.cpu()
     model_name = "ssd_512_mobilenet1.0_voc"
     net = model_zoo.get_model(model_name, pretrained=True, ctx=ctx)
@@ -15,16 +20,16 @@ def mxnet_inf_test(frame):
 
     class_IDs, scores, bounding_boxs = net(x)
 
-    class_IDs, bounding_boxs, scores = convertAsNumpy(
-        class_IDs, bounding_boxs, scores
-    )
+    class_IDs, bounding_boxs, scores = convertAsNumpy(class_IDs, bounding_boxs, scores)
+
 
 if __name__ == "__main__":
-    
-    im_frame = utils.download('https://github.com/dmlc/web-data/blob/master/' +
-                          'gluoncv/detection/street_small.jpg?raw=true',
-                          path='street_small.jpg')
+
+    im_frame = utils.download(
+        "https://github.com/dmlc/web-data/blob/master/"
+        + "gluoncv/detection/street_small.jpg?raw=true",
+        path="street_small.jpg",
+    )
 
     mxnet_inf_test(im_frame)
-    print('Test Pass')
-
+    print("[1/1] Integration Test Pass")
