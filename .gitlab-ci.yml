@@ -10,5 +10,6 @@ test:
     - pip3 install -r requirements.txt
     - python3 unit_test.py
     - python3 int_test.py
-
+  tags:
+    - fujijetsonlpr
 
