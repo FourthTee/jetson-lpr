@@ -33,6 +33,12 @@ This project uses MobileNet SSD object detection and OpenLPR to recognize licens
     
     Follow the guidelines on https://github.com/dusty-nv/jetson-inference/blob/master/docs/building-repo-2.md to install package
 
+- Python Dependencies
+
+    ```
+    pip3 install -r requirements.txt
+    ```
+
 ## 2) Configure
 
 In the `settings.yaml` file there are parameters to set up
@@ -89,3 +95,15 @@ python3 main.py
 ## 4) Benchmark
 
 The performance of each configuration on https://docs.google.com/spreadsheets/d/1oMSxabF4l3xrvqK6NWnBud4ajrDd7Hn4ok-dFK1BRNw/edit?usp=sharing
+
+
+## 5) Docker
+
+The docker image for this project can be pulled from container registry and run using
+
+```
+docker run -it --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --env="QT_X11_NO_MITSHM=1" --device=/dev/video<camera_num>:/dev/video<camera_num> --gpus all --name <container_name> -v $(pwd):/project <image_name>
+
+```
+
+Note: after starting container, still need to install python dependencies (see above)
